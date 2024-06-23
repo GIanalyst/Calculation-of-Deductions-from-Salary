@@ -1,0 +1,131 @@
+-- Əmək haqqından tutulmaların hesablanması --
+
+
+declare
+v_gross_maash number := &gross_maash;
+v_sektor varchar2(20):='&sektor';
+v_guzesht_madde varchar2(20):='&guzesht_madde';
+v_hemkarlar_faiz number := &hemkarlar_faiz;
+
+v_vergiye_celb_mebleg number;
+v_gelir_vergisi number :=0;
+v_dsmf number := 0;
+v_ishsizlik_sigortasi number;
+v_icbari_tibbi_sigorta number;
+v_hemkarlar_teskilatina_uzvluk_haqqi number;
+v_nett_maash number;
+
+
+begin
+
+if v_guzesht_madde not in ('102.1-1', '102-2', '102-3', '102-4', '102-5','0') then
+raise_application_error(-20011, 'Invalid input for v_guzesht_madde. Valid inputs are: ''102.1-1'', ''102-2'', ''102-3'', ''102-4'', ''102-5'', ''0''.');
+end if;
+
+if v_sektor not in ('qeyri_neft', 'ozel', 'neft_qaz', 'dovlet') then
+raise_application_error(-20012, 'Invalid input for v_sektor. Valid inputs are: ''qeyri_neft'', ''ozel'', ''neft_qaz'', ''dovlet''.');
+end if;
+
+dbms_output.put_line('Hesablanan aylıq əmək haqqı: '||to_char(v_gross_maash));
+
+-- Vergiyə cəlb olunan məbləğ
+
+if v_guzesht_madde = '102.1-1'
+then v_vergiye_celb_mebleg := v_gross_maash-800;
+dbms_output.put_line('Güzəşt: '||800);
+
+elsif v_guzesht_madde = '102-2'
+then v_vergiye_celb_mebleg := v_gross_maash-400;
+dbms_output.put_line('Güzəşt: '||400);
+
+elsif v_guzesht_madde = '102-3'
+then v_vergiye_celb_mebleg := v_gross_maash-200;
+dbms_output.put_line('Güzəşt: '||200);
+
+elsif v_guzesht_madde = '102-4'
+then v_vergiye_celb_mebleg := v_gross_maash-100;
+dbms_output.put_line('Güzəşt: '||100);
+
+elsif v_guzesht_madde = '102-5'
+then v_vergiye_celb_mebleg := v_gross_maash-50;
+dbms_output.put_line('Güzəşt: '||50);
+
+else v_vergiye_celb_mebleg := v_gross_maash;
+end if;
+
+dbms_output.put_line('Vergiyə cəlb olunan məbləğ :'||to_char(v_vergiye_celb_mebleg));
+
+
+-- qeyri_neft_qaz & ozel
+
+if v_sektor = 'qeyri_neft' or v_sektor = 'ozel'
+
+then
+
+-- Gəlir vergisi 
+
+if v_vergiye_celb_mebleg > 8000
+then 
+v_gelir_vergisi:= (v_vergiye_celb_mebleg - 8000) * 0.14;
+else
+v_gelir_vergisi:= 0;
+end if;
+dbms_output.put_line('Gəlir vergisi: '||to_char(v_gelir_vergisi));
+
+-- DSMF ayırmaları
+
+if  v_gross_maash <= 200 
+then 
+v_dsmf:= v_gross_maash * 0.03;
+else
+v_dsmf:= 6+(v_gross_maash-200)*0.1;
+end if;
+dbms_output.put_line('DSMF ayırmaları: '||to_char(v_dsmf));
+
+
+-- neft_qaz & dovlet 
+elsif v_sektor = 'neft' or v_sektor = 'dovlet' then
+
+-- Gəlir vergisi
+if v_vergiye_celb_mebleg <= 2500
+then 
+v_gelir_vergisi:= (v_vergiye_celb_mebleg-200)*0.14;
+else
+v_gelir_vergisi:= 350+(v_vergiye_celb_mebleg - 2500) * 0.25;
+end if;
+dbms_output.put_line('Gəlir vergisi: '||to_char(v_gelir_vergisi));     
+
+
+-- DSMF ayırmaları
+v_dsmf := v_gross_maash * 0.03;
+dbms_output.put_line('DSMF ayırmaları :'||to_char(v_dsmf));
+
+end if;
+
+-- İşsizlikdən sığorta haqqı
+v_ishsizlik_sigortasi:= v_gross_maash * 0.005;
+dbms_output.put_line('İşsizlikdən sığorta haqqı: '||to_char(v_ishsizlik_sigortasi));
+
+
+-- İcbari tibbi sığorta haqqı:
+if v_gross_maash <= 8000 
+then 
+v_icbari_tibbi_sigorta:= v_gross_maash * 0.02;
+else
+v_icbari_tibbi_sigorta:= 160+(v_gross_maash-8000)*0.005;
+end if;
+
+dbms_output.put_line('İcbari tibbi sığorta haqqı: '||to_char(v_icbari_tibbi_sigorta));
+
+
+-- Həmkarlar təşkilatına üzvlük haqqı
+v_hemkarlar_teskilatina_uzvluk_haqqi:= v_gross_maash*(v_hemkarlar_faiz/100);
+dbms_output.put_line('Həmkarlar təşkilatına üzvlük haqqı: '||to_char(v_hemkarlar_teskilatina_uzvluk_haqqi));
+
+
+-- yekun odenilecek mebleg
+v_nett_maash:= v_gross_maash - v_gelir_vergisi - v_dsmf - v_ishsizlik_sigortasi - v_icbari_tibbi_sigorta - v_hemkarlar_teskilatina_uzvluk_haqqi;
+dbms_output.put_line('Yekun ödəniləcək məbləğ : '||v_nett_maash);
+
+end;
+/
