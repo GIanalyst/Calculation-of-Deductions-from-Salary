@@ -1,4 +1,4 @@
--- Əmək haqqından tutulmaların hesablanması --
+-- Calculation of Deductions from Salary  --
 
 
 declare
